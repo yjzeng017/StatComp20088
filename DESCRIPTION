@@ -1,0 +1,19 @@
+Package: StatComp20088
+Type: Package
+Title: Homework of Statistical Computation with an additional Bayesian classifier
+Version: 1.0
+Date: 2020-12-20
+Author: Youjie Zeng (class ID: 20088)
+Maintainer: Youjie Zeng <yjzeng@mail.ustc.edu.cn>
+Description: The R package contains two part: (I) All homework of Statistical Computation (lecturer: Prof.Zhang, Fall term,2020); (II) A Bayesian classifier using Gaussian Process Binary Regression
+License: GPL (>= 2)
+Depends: R (>= 3.5.0)
+Imports: Rcpp (>= 0.12.16), microbenchmark, boot, bootstrap, DAAG, RANN, energy, Ball, kableExtra, MASS, stats
+LinkingTo: Rcpp
+Encoding: UTF-8
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
+LazyData: true
+RoxygenNote: 7.1.1
+URL: http://github.com/yjzeng017/StatComp20088
+BugReports: http://github.com/yjzeng017/StatComp20088/issues

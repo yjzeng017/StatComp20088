@@ -1,0 +1,112 @@
+---
+title: "GPclassifier_20088"
+author: "Youjie_Zeng_20088"
+date: "2020/12/20"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to the usage of the Bayesian classifier using binary generalized gaussian process regression}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Model introduction
+Supposed we have the observed data set $\mathcal{D} = \{y_i,\boldsymbol{x}_i\}$ in which the response variable $y$ is binary data, i.e. $y=0$ or $1$, and the covariate $\boldsymbol{x}$ associate with the response $y$ is a multi-dimensional functional variable. Then the clustering problem is to estimate the response probability $P(y =1|\boldsymbol{x})=\pi(\boldsymbol{x})$. A $GP\ \ binary\ \ regression\ \ model$ is illustrated as follow. The binary  functional response variable has a binomial distribution with parameters $1$ and $\pi(t)$, i.e.
+\begin{align}
+	y(t) |\pi(\boldsymbol{x}(t)) \sim Bin (1,\pi(\boldsymbol{x}(t)))
+\end{align}
+If we use a logit link, $logit[\pi(\boldsymbol{x}(t))] = f(\boldsymbol{x}(t))$, then the latent variable $f(\boldsymbol{x}(t))$ can be modelled by the GPR model, i.e.
+\begin{align}
+	f(\boldsymbol{x}(t)) \sim GPR (0,k(\cdot,\cdot;\boldsymbol{\theta})|\boldsymbol{x}(t))
+\end{align}
+where $\boldsymbol{x}(t)$ are $Q$-dimensional function covariates and $k(\cdot,\cdot;\boldsymbol{\theta})$ is a covariance kernel. Thus, given the observed data $\mathcal{D}$ at data points $ t =1,...,n$, we have write the discrete form of the model as 
+\begin{align}
+	y_i | \pi_i \sim i.i.d \ \  Bin (1,\pi_i),\ \ i =1,...,n.
+\end{align}
+Using the logit link, the latent variable $f_i$ is defined by $f_i = f(\boldsymbol{x}_i)=logit[\pi(\boldsymbol{x}_i)]$. From the Gaussian process binary regression model, we have 
+$$ \boldsymbol{f}  = (f_1,...,f_n) \sim N(0,\boldsymbol{K}(\boldsymbol{\theta})),$$
+where $\boldsymbol{K}$ is defined by a kernel covaiance $k(\cdot,\cdot;\boldsymbol{\theta})$ ane the $(i,j)$-th element of $\boldsymbol{K}$ is given by $Cov(f_i,f_j) = k(\boldsymbol{x}_i,\boldsymbol{x}_j;\boldsymbol{\theta})$. Then the density fucntion of $\boldsymbol{y}$ given $ \boldsymbol{f}$ can be written by 
+\begin{align}
+	p(\boldsymbol{y}|\boldsymbol{f}) = \prod_{i=1}^n \pi_i^{y_i}(1-\pi_i)^{1-y_i} = \prod_{i=1}^n \frac{\exp(f_i y_i)}{1 + \exp(f_i)}.
+\end{align}
+Thus, the parameters $\boldsymbol{\theta}$ can be estimated by maximizing the marginal distribution of $\boldsymbol{y}$ which is given by 
+\begin{align}
+	p(\boldsymbol{y}|\boldsymbol{x},\boldsymbol{\theta}) = \int p(\boldsymbol{y}|\boldsymbol{f}) p(\boldsymbol{f}|\boldsymbol{x},\boldsymbol{\theta}) d \boldsymbol{f}
+\end{align}
+The above integral has not a closed form since response variable $y$ has a exponential family distribution. We consider the Laplace approximation.
+
+We consider alternatively the marginal log-likelihood 
+\begin{align}\label{loglikelihood}
+	l (\boldsymbol{\theta}) = \log(p(\boldsymbol{y}|\boldsymbol{x},\boldsymbol{\theta})) = \log \left( \int \exp(\gamma(\boldsymbol{f})) d \boldsymbol{f} \right)
+\end{align}
+where
+\begin{align}
+\gamma (\boldsymbol{f}) = \log(p(\boldsymbol{y}|\boldsymbol{f})) + \log (p(\boldsymbol{f}|\boldsymbol{x},\boldsymbol{\theta})). \label{gamma}
+\end{align}
+Meanwhile, We have
+\begin{align}
+	\frac{\partial \gamma(\boldsymbol{f})}{\partial \boldsymbol{f}} &= \boldsymbol{y} - \boldsymbol{\pi} - \boldsymbol{K}_n^{-1} \boldsymbol{f}, \label{firstD}\\
+	\frac{\partial \gamma(\boldsymbol{f})}{\partial \boldsymbol{f} \partial \boldsymbol{f}^T} &= -\boldsymbol{A} - \boldsymbol{K}_n^{-1},\label{secondD}
+\end{align}
+where $\boldsymbol{\pi} = (\pi_1,...,\pi_n)^T$ and $\boldsymbol{A}= \text{diag}(\pi_1(1-\pi_1),...,\pi_n(1-\pi_n))$. 
+By Laplace method, the integral in (\ref{loglikelihood}) can be approximated by 
+\begin{align}\label{LaplaceApprox}
+	l(\boldsymbol{\theta}) &= \log \int \exp(\gamma(\boldsymbol{f})) d\boldsymbol{f} \\
+	&\approx \gamma(\hat{\boldsymbol{f}}) + \frac{n}{2} \log(2\pi) -\frac{1}{2} \log| \boldsymbol{K}_n^{-1} +\boldsymbol{A}| \\
+	&= \log(p(\boldsymbol{y}|\hat{\boldsymbol{f}})) + \log(p(\hat{\boldsymbol{f}}|\boldsymbol{x},\boldsymbol{\theta})) + \frac{n}{2}\log(2\pi) -\frac{1}{2} \log| \boldsymbol{K}_n^{-1} + \boldsymbol{A}| \\
+	& = -\frac{1}{2}\log| \boldsymbol{K}_n| - \frac{1}{2}\hat{\boldsymbol{f}}^T \boldsymbol{K_n}^{-1} \hat{\boldsymbol{f}} - \frac{1}{2} \log| \boldsymbol{K}^{-1}_n + \boldsymbol{A}| + C
+\end{align}
+where $\hat{\boldsymbol{f}}$ is the maximizer of $ \gamma(\boldsymbol{f})$ and $C$ is the constant independent with $\boldsymbol{\theta}$. We can also obtain the first two derivatives of $ l(\boldsymbol{\theta})$ in (\ref{LaplaceApprox}) as follow, 
+\begin{align}
+	\frac{\partial l(\boldsymbol{\theta})}{\partial \theta_j} &= -\frac{1}{2} \text{tr} \left[ \left( \boldsymbol{K}^{-1}_n +(\boldsymbol{K}^{-1}_n + \boldsymbol{A})^{-1}\right) \frac{\partial \boldsymbol{K}_n}{\partial \theta_j}\right] + \frac{1}{2} \boldsymbol{\hat{f}}^T \boldsymbol{K}^{-1}_n \frac{\partial \boldsymbol{K}_n}{\partial \theta_j}  \boldsymbol{K}^{-1}_n \boldsymbol{\hat{f}}\\
+	&= \frac{1}{2} \text{tr}\left[\left(\boldsymbol{\alpha} \boldsymbol{\alpha}^T - \left( \boldsymbol{K}^{-1}_n +(\boldsymbol{K}^{-1}_n + \boldsymbol{A})^{-1}\right) \right) \frac{\partial \boldsymbol{K}_n}{\partial \theta_j} \right] \label{Dloglike}
+\end{align}
+where $\boldsymbol{\alpha} = \boldsymbol{K}^{-1}_n \boldsymbol{\hat{f}}$. 
+In addition, the second derivatives can be calculated accordingly, and we list the formula here,
+\begin{align}
+	\frac{\partial^2 l(\boldsymbol{\theta})}{\partial\theta_i \partial \theta_j} = & \frac{1}{2}\text{tr}\left[\left(\boldsymbol{\alpha} \boldsymbol{\alpha}^T - \left( \boldsymbol{K}^{-1}_n +(\boldsymbol{K}^{-1}_n + \boldsymbol{A})^{-1}\right) \right) \frac{\partial^2 \boldsymbol{K}_n}{\partial \theta_i \partial \theta_j}\right] - \frac{1}{2} \text{tr}\left[ 2 \boldsymbol{\alpha}\boldsymbol{\alpha}^T \frac{\partial \boldsymbol{K}_n}{\partial \theta_i}\boldsymbol{K}^{-1}_n \frac{\partial \boldsymbol{K}_n}{\partial \theta_j}\right]\\
+	& +\frac{1}{2} \text{tr}\left[ \boldsymbol{K}^{-1}_n\frac{\partial \boldsymbol{K}_n}{\partial \theta_i} \boldsymbol{K}^{-1}_n \frac{\partial \boldsymbol{K}_n}{\partial \theta_j}\right] + \frac{1}{2} \text{tr}\left[ (\boldsymbol{K}^{-1}_n+\boldsymbol{A})^{-1}\frac{\partial \boldsymbol{K}_n}{\partial \theta_i} (\boldsymbol{K}^{-1}_n+\boldsymbol{A})^{-1} \frac{\partial \boldsymbol{K}_n}{\partial \theta_j}\right]. \label{DDloglike}
+\end{align}
+
+Empirical Bayesian estimates of $\boldsymbol{\theta}$ can therefore be calculated by maximizing approximated log-likelihood. However, $\gamma(\boldsymbol{f})$ depends on $\boldsymbol{\theta}$. So we need an iterative method, starting with initial values of $\boldsymbol{\theta}$ and then updating $\boldsymbol{f}$ and $ \boldsymbol{\theta}$ in turn until both converge.
+
+\textbf{Algorithm.}(Empirical Bayesian learning for the GP binary regression model). Each iteration include the following two steps:
+
+Given $\boldsymbol{\theta}$, update $\boldsymbol{f}$ by maximizeing $\gamma(\boldsymbol{f})$ 
+
+Given $\boldsymbol{f}$, update $\boldsymbol{\theta}$ by maximizing $l(\boldsymbol{\theta})$.
+
+After that we obtained $\hat{\boldsymbol{\theta}}$ and $\hat{\boldsymbol{f}}$ from the above Algorithm, given a new input point $\boldsymbol{x}^*$ and let $f^* = f(\boldsymbol{x}^*)$, the simple estimates of the predictive mean and variance of $f^*$ are given by 
+\begin{align}
+	E(f^*|\mathcal{D},\boldsymbol{x}) &\approx \boldsymbol{k}^* \boldsymbol{K}_n^{-1} (\boldsymbol{\hat{\theta}}) \hat{\boldsymbol{f}}, \\
+	Var(f^*|\mathcal{D},\boldsymbol{x}) &\approx k(\boldsymbol{x}^*,\boldsymbol{x}^*) - \boldsymbol{k}^{*T} (\boldsymbol{A}^{-1} + \boldsymbol{K}_n)^{-1}\boldsymbol{k}^* 
+\end{align}
+where $\boldsymbol{k}^* = (k(\boldsymbol{x}^*,\boldsymbol{x}_1),...,k(\boldsymbol{x}^*,\boldsymbol{x}_n))^T$. Once $\hat{f}^*$ is calculated, we can estimate the value of $\pi^*$, the predictive probability. Consequently, the prediction of $y^*$ takes either the value of $1$ if $\pi^*\geq 0.5$ or $0$ either.
+
+## $fit.GPbinary()$
+The main function to estimate the kernel hyper-parameters by using maximizing the marginal log-likelihood and Laplace approximation iteratively.
+
+## $GP.predict()$
+When model are trained, i.e., hyper-parameters are estimated by using $fit.GPbinary()$, given a new input $\boldsymbol{x^*}=(x_1^*,x_2^*)$, this function gives a prediction at $\boldsymbol{x^*}$, say $y(x^*)$.
+
+## $y.loglike()$
+Calculate the minus marginal log-likelihood with Laplace approximation.
+
+## $y.Dloglike()$
+Calculate the gredient for minus marginal log-likelihood for obtaining the maximizer, i.e., the MLE of hyper-parameters.
+
+## $gamma.f()$
+Calculate the Laplace approximation.
+
+## $Dgamma.f()$
+Calculate the gradient for Laplace approximation.
+
+## $cov.func()$
+Calculate the covariance matrix.
+
+## $mymatinv()$
+Calculate the inverse of a symmetry matrix and add a jitter to aviod singular case.
